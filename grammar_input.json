@@ -1,10 +1,10 @@
 {
-    "nonterminals": ["S", "B"],
+    "nonterminals": ["A", "B"],
     "terminals": ["a", "b"],
-    "start_symbol": "S",
+    "start_symbol": "A",
     "rules": [
-        "S->aS",
-        "S->aB",
+        "A->aA",
+        "A->aB",
         "B->bB",
         "B->b"
     ]

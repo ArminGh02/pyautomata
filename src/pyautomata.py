@@ -1,31 +1,48 @@
+from abc import ABC, abstractmethod
 from collections import deque
-from typing import NamedTuple
+from dataclasses import dataclass
+
 from consts import LAMBDA
 from grammar import Grammar
+import grammar
 
 
-class NFA(NamedTuple):
+class Automata(ABC):
+    @abstractmethod
+    def accepts(self, string: str) -> bool:
+        pass
+
+
+class FA(Automata, ABC):
+    """Abstract base class for NFA and DFA"""
+
+
+@dataclass
+class NFA(FA):
     states: set[str]
     input_symbols: set[str]
+    # a dict from current state to a dict from input symbol to the set of end states
     transitions: dict[str, dict[str, set[str]]]
     initial_state: str
     final_states: set[str]
 
-    def get_lambda_closure(self, start_state: str) -> set[str]:
-        stack = []
-        encountered_states = set()
-        stack.append(start_state)
+    def accepts(self, string: str) -> bool:
+        raise Exception("Not implemented yet")
 
+    def get_lambda_closure(self, start_state: str) -> set[str]:
+        encountered_states = set()
+        stack = []
+        stack.append(start_state)
         while stack:
             state = stack.pop()
             if state not in encountered_states:
                 encountered_states.add(state)
                 if LAMBDA in self.transitions[state]:
-                    stack.extend(self.transitions[state][''])
+                    stack.extend(self.transitions[state][LAMBDA])
 
         return encountered_states
 
-    def get_next_current_states(self, current_states, input_symbol):
+    def get_next_states(self, current_states, input_symbol):
         """Used in converting DFA to NFA"""
         next_current_states = set()
 
@@ -39,9 +56,9 @@ class NFA(NamedTuple):
 
     @staticmethod
     def from_grammar(rg: Grammar) -> 'NFA':
-        if is_llg(rg):
+        if grammar.is_llg(rg):
             return NFA._from_llg(rg)
-        if is_rlg(rg):
+        if grammar.is_rlg(rg):
             return NFA._from_rlg(rg)
         raise ValueError("input grammar is not regular")
 
@@ -77,10 +94,10 @@ class NFA(NamedTuple):
         new_states.add(str(new_initial_state))
 
         new_transitions = {state: {} for state in new_states}
-        for state_a, transitions in self.transitions.items():
+        for state1, transitions in self.transitions.items():
             for symbol, states in transitions.items():
-                for state_b in states:
-                    new_transitions[state_b].setdefault(symbol, set()).add(state_a)
+                for state2 in states:
+                    new_transitions[state2].setdefault(symbol, set()).add(state1)
 
         new_transitions[new_initial_state][LAMBDA] = self.final_states.copy()
 
@@ -96,7 +113,7 @@ class NFA(NamedTuple):
     @staticmethod
     def _transitions_from_rules(rlg: Grammar) -> dict[str, dict[str, set[str]]]:
         # {'q0': {'a': {'q1', 'q2'}}} indicates a transition from q0 to q1 or q2 by reading 'a'
-        transitions = {}
+        transitions = {'F': {}}
         i = 0
         for left_side, right_side in rlg.rules:
             if right_side[-1] in rlg.nonterminals:
@@ -123,9 +140,11 @@ class NFA(NamedTuple):
         return transitions
 
 
-class DFA(NamedTuple):
+@dataclass
+class DFA(FA):
     states: set[str]
     input_symbols: set[str]
+    # a dict from current state to a dict from input symbol to the end state
     transitions: dict[str, dict[str, str]]
     initial_state: str
     final_states: set[str]
@@ -165,9 +184,9 @@ class DFA(NamedTuple):
                 final_states.add(current_state_name)
 
             for input_symbol in nfa.input_symbols:
-                next_current_states = nfa.get_next_current_states(current_states, input_symbol)
-                transitions[current_state_name][input_symbol] = stringify_states(next_current_states)
-                state_queue.append(next_current_states)
+                next_states = nfa.get_next_states(current_states, input_symbol)
+                transitions[current_state_name][input_symbol] = stringify_states(next_states)
+                state_queue.append(next_states)
 
         return DFA(
             states=states,
@@ -178,26 +197,36 @@ class DFA(NamedTuple):
         )
 
 
-def is_rg(g: Grammar) -> bool:
-    return is_rlg(g) or is_llg(g)
+class PDA(Automata, ABC):
+    pass
 
 
-def is_rlg(g: Grammar) -> bool:
-    # left side most consist only of one nonterminal
-    if not all(len(left_side) == 1 and left_side in g.nonterminals for left_side, _ in g.rules):
-        return False
-    return all(
-        set(right_side).issubset(g.terminals) or
-        (right_side[-1] in g.nonterminals and set(right_side[:-1]).issubset(g.terminals))
-        for _, right_side in g.rules
-    )
+@dataclass
+class DPDA(PDA):
+    states: set[str]
+    final_states: set[str]
+    initial_state: str
+    input_symbols: set[str]
+    stack_symbols: set[str]
+    transitions: dict[str, dict[str, tuple[str, str, str]]]
+    stack_start_symbol: str
 
+    def accepts(self, string: str) -> bool:
+        """Acceptance by final state"""
+        if not set(string).issubset(self.input_symbols):
+            return False
 
-def is_llg(g: Grammar) -> bool:
-    if not all(len(left_side) == 1 and left_side in g.nonterminals for left_side, _ in g.rules):
-        return False
-    return all(
-        set(right_side).issubset(g.terminals) or
-        (right_side[1] in g.nonterminals and set(right_side[1:]).issubset(g.terminals))
-        for _, right_side in g.rules
-    )
+        cur_state = self.initial_state
+        stack = ['Z']
+        for i, symbol in enumerate(string):
+            next_state, to_pop, to_push = self.transitions[cur_state][symbol]
+            stack.pop(to_pop)
+            if to_push != LAMBDA:
+                stack.append(to_push)
+
+            if not stack:
+                return i == len(string) - 1 and cur_state in self.final_states
+
+            cur_state = next_state
+
+        return cur_state in self.final_states
