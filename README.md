@@ -15,10 +15,13 @@ B->bB
 B->b
 ```
 
-The generated graph for NFA is:  
+The generated graph for NFA is:
 
 ![NFA](/NFA.png "NFA")
 
-and the output graph for DFA is:  
+and the output graph for DFA is:
 
 ![DFA](/DFA.png "DFA")
+
+## See also
+**[Factorial Turing Machine](https://gist.github.com/ArminGh02/e3859f1e1843cd8872b77dab400d2040)**
