@@ -16,7 +16,9 @@ B->b
 ```
 
 The generated graph for NFA is:  
+
 ![NFA](/NFA.png "NFA")
 
 and the output graph for DFA is:  
+
 ![DFA](/DFA.png "DFA")
