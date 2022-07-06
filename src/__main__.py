@@ -53,7 +53,7 @@ def create_dfa_and_nfa_images(dfa: pyautomata.DFA, nfa: pyautomata.NFA) -> None:
 
 
 def accept_strings(automata: pyautomata.Automata) -> None:
-    print("You can now input strings to see if the DFA accepts them: (type 'exit' to quit)")
+    print("You can now input strings to see if the automata accepts them: (type 'exit' to quit)")
     while True:
         input_str = input("> ")
 

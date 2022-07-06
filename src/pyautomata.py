@@ -44,22 +44,24 @@ class NFA(FA):
 
     def get_next_states(self, current_states, input_symbol):
         """Used in converting DFA to NFA"""
-        next_current_states = set()
+        next_states = set()
 
         for current_state in current_states:
             symbol_end_states = self.transitions[current_state].get(input_symbol)
             if symbol_end_states:
                 for end_state in symbol_end_states:
-                    next_current_states.update(self.get_lambda_closure(end_state))
+                    next_states.update(self.get_lambda_closure(end_state))
 
-        return next_current_states
+        return next_states
 
     @staticmethod
     def from_grammar(rg: Grammar) -> 'NFA':
         if grammar.is_llg(rg):
             return NFA._from_llg(rg)
+
         if grammar.is_rlg(rg):
             return NFA._from_rlg(rg)
+
         raise ValueError("input grammar is not regular")
 
     @staticmethod

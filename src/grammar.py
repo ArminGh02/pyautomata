@@ -25,6 +25,7 @@ def is_rlg(g: Grammar) -> bool:
     # left side most consist only of one nonterminal
     if not all(len(left_side) == 1 and left_side in g.nonterminals for left_side, _ in g.rules):
         return False
+
     return all(
         set(right_side).issubset(g.terminals) or
         (right_side[-1] in g.nonterminals and set(right_side[:-1]).issubset(g.terminals))
@@ -35,6 +36,7 @@ def is_rlg(g: Grammar) -> bool:
 def is_llg(g: Grammar) -> bool:
     if not all(len(left_side) == 1 and left_side in g.nonterminals for left_side, _ in g.rules):
         return False
+
     return all(
         set(right_side).issubset(g.terminals) or
         (right_side[1] in g.nonterminals and set(right_side[1:]).issubset(g.terminals))
